@@ -3,17 +3,18 @@ from flask_cors import CORS,cross_origin
 import requests
 from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen as uReq
-import logging
 import pymongo
-logging.basicConfig(filename="scrapper.log" , level=logging.INFO)
 
-app = Flask(__name__)
+application = Flask(__name__) # initializing a flask app
+app=application
 
-@app.route("/", methods = ['GET'])
-def homepage():
+@app.route('/',methods=['GET'])  # route to display the home page
+@cross_origin()
+def homePage():
     return render_template("index.html")
 
-@app.route("/review" , methods = ['POST' , 'GET'])
+@app.route('/review',methods=['POST','GET']) # route to show the review comments in a web UI
+@cross_origin()
 def index():
     if request.method == 'POST':
         try:
@@ -44,7 +45,7 @@ def index():
                     name = commentbox.div.div.find_all('p', {'class': '_2sc7ZR _2V5EHH'})[0].text
 
                 except:
-                    logging.info("name")
+                    name = 'No Name'
 
                 try:
                     #rating.encode(encoding='utf-8')
@@ -53,7 +54,6 @@ def index():
 
                 except:
                     rating = 'No Rating'
-                    logging.info("rating")
 
                 try:
                     #commentHead.encode(encoding='utf-8')
@@ -61,32 +61,28 @@ def index():
 
                 except:
                     commentHead = 'No Comment Heading'
-                    logging.info(commentHead)
                 try:
                     comtag = commentbox.div.div.find_all('div', {'class': ''})
                     #custComment.encode(encoding='utf-8')
                     custComment = comtag[0].div.text
                 except Exception as e:
-                    logging.info(e)
+                    print("Exception while creating dictionary: ",e)
 
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
                 reviews.append(mydict)
-            logging.info("log my final result {}".format(reviews))
-
-            client = pymongo.MongoClient("mongodb+srv://rajatjain852:rajat321@cluster0.drhks7r.mongodb.net/?retryWrites=true&w=majority")
-            db = client['review_scrapper']
-            review_coll=db['review_scrap_data']
-            review_coll.insert_many(reviews)
-            return render_template('result.html', reviews=reviews[0:(len(reviews)-1)])
+            client = pymongo.MongoClient("mongodb+srv://pwskills:pwskills@cluster0.ln0bt5m.mongodb.net/?retryWrites=true&w=majority")
+            db = client['review_scrap']
+            review_col = db['review_scrap_data']
+            review_col.insert_many(reviews)
+            return render_template('results.html', reviews=reviews[0:(len(reviews)-1)])
         except Exception as e:
-            logging.info(e)
+            print('The Exception message is: ',e)
             return 'something is wrong'
     # return render_template('results.html')
 
     else:
         return render_template('index.html')
 
-
-if __name__=="__main__":
-    app.run(host="0.0.0.0",port=5002)
+if __name__ == "__main__":
+    app.run(host='127.0.0.1', port=8000, debug=True)
